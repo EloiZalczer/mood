@@ -6,6 +6,7 @@ import 'package:mood/dialogs/empty_day.dart';
 import 'package:mood/dialogs/show_entry.dart';
 import 'package:mood/models.dart';
 import 'package:mood/notifications.dart';
+import 'package:mood/structures.dart';
 import 'package:mood/utils.dart';
 import 'package:provider/provider.dart';
 
@@ -30,7 +31,17 @@ class _MoodCalendarState extends State<MoodCalendar> {
       notificationsProvider.notificationResponses.listen((
         NotificationResponse response,
       ) {
-        print(response);
+        final today = DateTime.now();
+        final entry = Provider.of<MoodModel>(
+          context,
+          listen: false,
+        ).getEntry(today);
+
+        if (entry == null) {
+          if (mounted) onEmptyDayTapped(context, today);
+        } else {
+          if (mounted) onEntryDayTapped(context, entry);
+        }
       });
     });
   }
@@ -45,7 +56,7 @@ class _MoodCalendarState extends State<MoodCalendar> {
 
   @override
   Widget build(BuildContext context) {
-    var moodEntries = context.read<MoodModel>();
+    var moodEntries = context.watch<MoodModel>();
 
     double height =
         MediaQuery.sizeOf(context).height - AppBar().preferredSize.height;
@@ -54,18 +65,20 @@ class _MoodCalendarState extends State<MoodCalendar> {
 
     final moodsByMonth = moodEntries.entriesByMonth;
 
+    print(moodsByMonth);
+
     final sortedEntries = moodsByMonth.entries.sortedBy(
-      (e) => "${e.key["year"]}${e.key["month"]}",
+      (e) => "${e.key.year}${e.key.month}",
     );
 
-    List<Map<String, int>> months;
+    List<YearMonth> months;
 
     if (sortedEntries.isNotEmpty) {
       final firstEntry = sortedEntries[0];
-      months = monthsSince(firstEntry.key["year"]!, firstEntry.key["month"]!);
+      months = monthsSince(firstEntry.key.year, firstEntry.key.month);
     } else {
       months = [
-        {"year": DateTime.now().year, "month": DateTime.now().month},
+        YearMonth(year: DateTime.now().year, month: DateTime.now().month),
       ];
     }
 
@@ -79,7 +92,7 @@ class _MoodCalendarState extends State<MoodCalendar> {
 
         final monthlyEntries = moodsByMonth[month];
 
-        final nbdays = daysInMonth(month["year"]!, month["month"]!);
+        final nbdays = daysInMonth(month.year, month.month);
 
         Map<int, MoodDailyEntry> entriesByDays = {};
 
@@ -94,6 +107,7 @@ class _MoodCalendarState extends State<MoodCalendar> {
           if (entry != null) {
             children.add(
               GestureDetector(
+                onTap: () => onEntryDayTapped(context, entry),
                 child: Container(
                   width: squareHeight,
                   height: squareHeight,
@@ -110,7 +124,7 @@ class _MoodCalendarState extends State<MoodCalendar> {
                 onTap:
                     () => onEmptyDayTapped(
                       context,
-                      DateTime(month["year"]!, month["month"]!, i),
+                      DateTime(month.year, month.month, i),
                     ),
                 child: Container(
                   width: squareHeight,

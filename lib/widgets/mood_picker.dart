@@ -5,7 +5,14 @@ class MoodPicker extends StatefulWidget {
   final Function? onChanged;
   final MoodController? controller;
 
-  const MoodPicker({super.key, this.onChanged, this.controller});
+  final bool readonly;
+
+  const MoodPicker({
+    super.key,
+    this.onChanged,
+    this.controller,
+    this.readonly = false,
+  });
 
   @override
   State<MoodPicker> createState() => _MoodPickerState();
@@ -20,7 +27,7 @@ class _MoodPickerState extends State<MoodPicker> {
   void initState() {
     super.initState();
 
-    this.controller = widget.controller ?? MoodController();
+    controller = widget.controller ?? MoodController();
 
     controller.addListener(() {
       setState(() {});

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:mood/database.dart';
+import 'package:mood/models.dart';
 import 'package:mood/utils.dart';
 import 'package:mood/widgets/mood_picker.dart';
+import 'package:provider/provider.dart';
 
 class EmptyDayDialog extends StatefulWidget {
   final DateTime day;
@@ -23,6 +26,7 @@ class EmptyDayDialog extends StatefulWidget {
 class _EmptyDayDialogState extends State<EmptyDayDialog> {
   final _formKey = GlobalKey<FormState>();
   late MoodController _moodController;
+  final _noteController = TextEditingController();
 
   @override
   void initState() {
@@ -30,8 +34,16 @@ class _EmptyDayDialogState extends State<EmptyDayDialog> {
     _moodController = MoodController();
   }
 
-  void _submit() {
+  void _submit(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
+      final model = context.read<MoodModel>();
+      await model.addEntry(
+        MoodDailyEntry(
+          date: widget.day,
+          mood: _moodController.mood!,
+          comment: _noteController.text,
+        ),
+      );
       Navigator.pop(context);
     }
   }
@@ -55,6 +67,7 @@ class _EmptyDayDialogState extends State<EmptyDayDialog> {
               },
             ),
             TextFormField(
+              controller: _noteController,
               keyboardType: TextInputType.text,
               decoration: const InputDecoration(
                 border: UnderlineInputBorder(),
@@ -69,7 +82,7 @@ class _EmptyDayDialogState extends State<EmptyDayDialog> {
           child: Text("Cancel"),
           onPressed: () => Navigator.pop(context),
         ),
-        ElevatedButton(child: Text("Save"), onPressed: () => _submit()),
+        ElevatedButton(child: Text("Save"), onPressed: () => _submit(context)),
       ],
     );
   }

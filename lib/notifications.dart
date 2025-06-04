@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:timezone/timezone.dart' as tz;
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -83,43 +84,41 @@ class NotificationService {
 
     final bool? grantedNotificationPermission =
         await androidImplementation?.requestNotificationsPermission();
+
+    androidImplementation?.requestExactAlarmsPermission();
     _notificationsEnabled = grantedNotificationPermission ?? false;
   }
 
-  Future<void> showNotification() async {
-    print("show notification");
+  Future<void> scheduleNotifications() async {
+    // FIXME probably shouldn't cancel and re-schedule notifications every time
+    await _notificationsPlugin.cancelAll();
 
-    const AndroidNotificationDetails androidNotificationDetails =
-        AndroidNotificationDetails(
-          "mood_app",
-          "mood_app",
-          channelDescription: "channel description",
-          importance: Importance.max,
-          priority: Priority.high,
-          ticker: "ticker",
-          actions: <AndroidNotificationAction>[
-            AndroidNotificationAction(
-              "mood_id",
-              "Note",
-              inputs: <AndroidNotificationActionInput>[
-                AndroidNotificationActionInput(
-                  choices: ["😀", "🙂", "😐", "🙁", "😞"],
-                ),
-              ],
-            ),
-          ],
-        );
-
-    const NotificationDetails notificationDetails = NotificationDetails(
-      android: androidNotificationDetails,
+    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      23,
     );
 
-    await _notificationsPlugin.show(
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    await _notificationsPlugin.zonedSchedule(
       0,
       "How are you feeling ?",
-      "",
-      notificationDetails,
-      payload: "item x",
+      "Keep track of your mood now !",
+      scheduledDate,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          "daily_mood_channel_id",
+          "daily mood channel name",
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 }

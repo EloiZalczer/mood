@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:mood/structures.dart';
 
 int daysInMonth(int year, int month) {
   switch (month) {
@@ -32,31 +33,30 @@ Color moodToColor(int mood) {
   }
 }
 
-List<Map<String, int>> monthsSince(int year, int month) {
+List<YearMonth> monthsSince(int year, int month) {
   final currentDate = DateTime.now();
   final currentYear = currentDate.year;
   final currentMonth = currentDate.month;
 
   if (year == currentYear) {
     return [
-      for (var m = month; m <= currentMonth; m ++)
-      {"year": currentYear, "month": m}
+      for (var m = month; m <= currentMonth; m++)
+        YearMonth(year: currentYear, month: m),
     ];
   }
 
-  final List<Map<String, int>> monthsSince = [];
+  final List<YearMonth> monthsSince = [];
 
-  for (var y = year; y < currentYear; y ++) {
+  for (var y = year; y < currentYear; y++) {
     monthsSince.addAll([
-      for (var m = 1; m <= 12; m++)
-        {"year": y, "month": m}
+      for (var m = 1; m <= 12; m++) YearMonth(year: y, month: m),
     ]);
   }
 
-  for (var m = month; m <= currentMonth; m ++) {
+  for (var m = month; m <= currentMonth; m++) {
     monthsSince.addAll([
       for (var m = 1; m <= currentMonth; m++)
-        {"year": currentYear, "month": m}
+        YearMonth(year: currentYear, month: m),
     ]);
   }
 
