@@ -1,8 +1,5 @@
-import 'dart:collection';
-
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
-import 'package:intl/intl.dart';
 import 'package:mood/database.dart';
 import 'package:mood/structures.dart';
 import 'package:sqflite/sqflite.dart';
@@ -23,9 +20,6 @@ class MoodModel extends ChangeNotifier {
   }
 
   Future<void> addEntry(MoodDailyEntry entry) async {
-    print("add entry");
-    print(_db);
-
     if (_db == null) return;
 
     int id = await _db!.insert("entries", entry.toRecord());
@@ -39,7 +33,6 @@ class MoodModel extends ChangeNotifier {
 
     _entries.add(MoodDailyEntry.fromRecord(entries[0]));
 
-    print(entries);
     notifyListeners();
   }
 
@@ -51,15 +44,28 @@ class MoodModel extends ChangeNotifier {
     }
   }
 
-  void updateEntry(MoodDailyEntry entry) {
+  Future<void> updateEntry(MoodDailyEntry entry) async {
     if (_db == null) return;
 
-    _db!.update(
+    await _db!.update(
       "entries",
       entry.toRecord(),
       where: 'id = ?',
       whereArgs: [entry.id],
     );
+
+    _entries.removeWhere((e) => e.id == entry.id);
+
+    final entries = await _db!.query(
+      "entries",
+      where: "id = ?",
+      whereArgs: [entry.id],
+      limit: 1,
+    );
+
+    _entries.add(MoodDailyEntry.fromRecord(entries[0]));
+
+    notifyListeners();
   }
 
   Future<void> load() async {
@@ -73,11 +79,6 @@ class MoodModel extends ChangeNotifier {
     final entries = [
       for (final record in entriesMap) MoodDailyEntry.fromRecord(record),
     ];
-
-    print({"year": 2025, "month": 6}.hashCode);
-    print({"year": 2025, "month": 6}.hashCode);
-
-    print(entries);
 
     _entries = entries;
   }

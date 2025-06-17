@@ -94,6 +94,7 @@ class NotificationService {
     await _notificationsPlugin.cancelAll();
 
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+
     tz.TZDateTime scheduledDate = tz.TZDateTime(
       tz.local,
       now.year,
@@ -119,6 +120,20 @@ class NotificationService {
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
+    );
+  }
+
+  Future<void> showNotification() async {
+    await _notificationsPlugin.show(
+      0,
+      "How are you feeling ?",
+      "",
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          "daily_mood_channel_id",
+          "daily mood channel name",
+        ),
+      ),
     );
   }
 }

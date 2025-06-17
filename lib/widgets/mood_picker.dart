@@ -98,6 +98,8 @@ class _MoodPickerState extends State<MoodPicker> {
 class MoodController extends ChangeNotifier {
   int? mood;
 
+  MoodController({this.mood});
+
   changeMood(int mood) {
     this.mood = mood;
     notifyListeners();

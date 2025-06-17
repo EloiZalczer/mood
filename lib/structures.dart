@@ -11,4 +11,9 @@ class YearMonth {
 
   @override
   int get hashCode => Object.hash(year, month);
+
+  @override
+  String toString() {
+    return "YearMonth($year-$month)";
+  }
 }

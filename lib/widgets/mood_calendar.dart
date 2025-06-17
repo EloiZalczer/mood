@@ -1,6 +1,8 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_sticky_header/flutter_sticky_header.dart';
+import 'package:mood/constants.dart';
 import 'package:mood/database.dart';
 import 'package:mood/dialogs/empty_day.dart';
 import 'package:mood/dialogs/show_entry.dart';
@@ -20,29 +22,27 @@ class MoodCalendar extends StatefulWidget {
 class _MoodCalendarState extends State<MoodCalendar> {
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
 
-    WidgetsBinding.instance.addPostFrameCallback((timestamp) {
-      final notificationsProvider = Provider.of<NotificationsProvider>(
+    final notificationsProvider = Provider.of<NotificationsProvider>(
+      context,
+      listen: false,
+    );
+
+    notificationsProvider.notificationResponses.listen((
+      NotificationResponse response,
+    ) {
+      final today = DateTime.now();
+      final entry = Provider.of<MoodModel>(
         context,
         listen: false,
-      );
-      notificationsProvider.notificationResponses.listen((
-        NotificationResponse response,
-      ) {
-        final today = DateTime.now();
-        final entry = Provider.of<MoodModel>(
-          context,
-          listen: false,
-        ).getEntry(today);
+      ).getEntry(today);
 
-        if (entry == null) {
-          if (mounted) onEmptyDayTapped(context, today);
-        } else {
-          if (mounted) onEntryDayTapped(context, entry);
-        }
-      });
+      if (entry == null) {
+        if (mounted) onEmptyDayTapped(context, today);
+      } else {
+        if (mounted) onEntryDayTapped(context, entry);
+      }
     });
   }
 
@@ -56,17 +56,7 @@ class _MoodCalendarState extends State<MoodCalendar> {
 
   @override
   Widget build(BuildContext context) {
-    var moodEntries = context.watch<MoodModel>();
-
-    double height =
-        MediaQuery.sizeOf(context).height - AppBar().preferredSize.height;
-
-    double squareHeight = (height / 31).floorToDouble();
-
-    final moodsByMonth = moodEntries.entriesByMonth;
-
-    print(moodsByMonth);
-
+    final moodsByMonth = context.watch<MoodModel>().entriesByMonth;
     final sortedEntries = moodsByMonth.entries.sortedBy(
       (e) => "${e.key.year}${e.key.month}",
     );
@@ -82,65 +72,168 @@ class _MoodCalendarState extends State<MoodCalendar> {
       ];
     }
 
-    return ListView.builder(
-      scrollDirection: Axis.horizontal,
-      itemCount: months.length,
-      itemBuilder: (context, index) {
-        final List<Widget> children = [];
-
-        final month = months[index];
-
-        final monthlyEntries = moodsByMonth[month];
-
-        final nbdays = daysInMonth(month.year, month.month);
-
-        Map<int, MoodDailyEntry> entriesByDays = {};
-
-        if (monthlyEntries != null) {
-          entriesByDays = {
-            for (var entry in monthlyEntries) entry.date.day: entry,
-          };
-        }
-
-        for (var i = 1; i <= nbdays; i++) {
-          final entry = entriesByDays[i];
-          if (entry != null) {
-            children.add(
-              GestureDetector(
-                onTap: () => onEntryDayTapped(context, entry),
-                child: Container(
-                  width: squareHeight,
-                  height: squareHeight,
-                  decoration: BoxDecoration(
-                    color: moodToColor(entry.mood),
-                    border: Border.all(color: Colors.black),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        var height = constraints.constrainHeight();
+        double squareHeight = (height / 32).toDouble();
+        return CustomScrollView(
+          scrollDirection: Axis.horizontal,
+          slivers: [
+            SliverStickyHeader(
+              // overlapsContent: true,
+              header: Column(
+                children: [
+                  Container(
+                    height: squareHeight,
+                    width: squareHeight,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Colors.black),
+                        right: BorderSide(color: Colors.black),
+                      ),
+                    ),
                   ),
+                  ...List.generate(31, (index) {
+                    return Container(
+                      padding: EdgeInsets.all(1.0),
+                      height: squareHeight,
+                      width: squareHeight,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Colors.black),
+                          right: BorderSide(color: Colors.black),
+                        ),
+                      ),
+                      child: Text(
+                        (index + 1).toString(),
+                        textAlign: TextAlign.end,
+                      ),
+                    );
+                  }),
+                ],
+              ),
+              sliver: SliverList.separated(
+                itemCount: months.length,
+                itemBuilder: (context, index) {
+                  final month = months[index];
+                  final monthlyEntries = moodsByMonth[month];
+                  Map<int, MoodDailyEntry> entriesByDays = {};
+
+                  if (monthlyEntries != null) {
+                    entriesByDays = {
+                      for (var entry in monthlyEntries) entry.date.day: entry,
+                    };
+                  }
+
+                  print(entriesByDays);
+
+                  return MoodMonthColumn(
+                    squareSize: squareHeight,
+                    month: month,
+                    entries: entriesByDays,
+                    isLast: index == months.length - 1,
+                    onEmptyDayTapped: (date) => onEmptyDayTapped(context, date),
+                    onEntryDayTapped:
+                        (entry) => onEntryDayTapped(context, entry),
+                  );
+                },
+                separatorBuilder: (context, index) {
+                  return VerticalDivider(
+                    color: Colors.black,
+                    thickness: 1.0,
+                    width: 1.0,
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class MoodMonthColumn extends StatefulWidget {
+  final double squareSize;
+  final YearMonth month;
+  final Map<int, MoodDailyEntry> entries;
+  final bool isLast;
+  final ValueSetter onEmptyDayTapped;
+  final ValueSetter onEntryDayTapped;
+
+  const MoodMonthColumn({
+    super.key,
+    required this.squareSize,
+    required this.month,
+    required this.entries,
+    required this.isLast,
+    required this.onEmptyDayTapped,
+    required this.onEntryDayTapped,
+  });
+
+  @override
+  State<MoodMonthColumn> createState() => _MoodMonthColumnState();
+}
+
+class _MoodMonthColumnState extends State<MoodMonthColumn> {
+  late int nbdays;
+  late Border border;
+
+  @override
+  void initState() {
+    super.initState();
+
+    nbdays = daysInMonth(widget.month.year, widget.month.month);
+
+    border = Border(
+      bottom: BorderSide(color: Colors.black),
+      right: widget.isLast ? BorderSide(color: Colors.black) : BorderSide.none,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          height: widget.squareSize,
+          width: widget.squareSize,
+          decoration: BoxDecoration(border: border),
+          child: Text(
+            getMonthLetter(widget.month.month),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        ...List.generate(nbdays, (index) {
+          final entry = widget.entries[index + 1];
+
+          if (entry != null) {
+            return GestureDetector(
+              onTap: () => widget.onEntryDayTapped(entry),
+              child: Container(
+                width: widget.squareSize,
+                height: widget.squareSize,
+                decoration: BoxDecoration(
+                  color: moodToColor(entry.mood),
+                  border: border,
                 ),
               ),
             );
           } else {
-            children.add(
-              GestureDetector(
-                onTap:
-                    () => onEmptyDayTapped(
-                      context,
-                      DateTime(month.year, month.month, i),
-                    ),
-                child: Container(
-                  width: squareHeight,
-                  height: squareHeight,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.black),
+            return GestureDetector(
+              onTap:
+                  () => widget.onEmptyDayTapped(
+                    DateTime(widget.month.year, widget.month.month, index + 1),
                   ),
-                ),
+              child: Container(
+                width: widget.squareSize,
+                height: widget.squareSize,
+                decoration: BoxDecoration(color: Colors.white, border: border),
               ),
             );
           }
-        }
-
-        return Column(children: children);
-      },
+        }),
+      ],
     );
   }
 }
