@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class YearMonth {
   final int year;
   final int month;
@@ -15,5 +17,17 @@ class YearMonth {
   @override
   String toString() {
     return "YearMonth($year-$month)";
+  }
+}
+
+class NotificationTime {
+  final bool enabled;
+  final TimeOfDay time;
+
+  const NotificationTime({required this.enabled, required this.time});
+
+  @override
+  String toString() {
+    return "NotificationTime(${enabled ? "enabled" : "disabled"} at $time)";
   }
 }

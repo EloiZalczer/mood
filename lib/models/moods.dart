@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
-import 'package:mood/database.dart';
+import 'package:mood/database/moods.dart';
 import 'package:mood/structures.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -69,7 +69,7 @@ class MoodModel extends ChangeNotifier {
   }
 
   Future<void> load() async {
-    _db = await initDB();
+    _db = await initMoodDB();
 
     final List<Map<String, Object?>> entriesMap = await _db!.query(
       "entries",
@@ -81,5 +81,31 @@ class MoodModel extends ChangeNotifier {
     ];
 
     _entries = entries;
+  }
+
+  Future<void> clearAll() async {
+    if (_db == null) return;
+
+    await _db!.delete("entries");
+
+    _entries.clear();
+
+    notifyListeners();
+  }
+
+  Future<Map<int, int>> getStatistics() async {
+    print(_db);
+
+    if (_db == null) return {};
+
+    print("ok");
+
+    final results = await _db!.rawQuery(
+      "SELECT mood, COUNT(*) from entries GROUP BY mood",
+    );
+
+    print(results);
+
+    return {for (var v in results) v["mood"] as int: v["COUNT(*)"] as int};
   }
 }

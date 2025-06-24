@@ -50,6 +50,12 @@ class _MoodPickerState extends State<MoodPicker> {
     return ButtonStyle();
   }
 
+  void _changeMood(int mood) {
+    if (!widget.readonly) {
+      controller.changeMood(mood);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -57,35 +63,35 @@ class _MoodPickerState extends State<MoodPicker> {
       children: [
         Expanded(
           child: IconButton(
-            onPressed: () => controller.changeMood(4),
+            onPressed: () => _changeMood(4),
             style: buttonStyle(4),
             icon: Icon(Icons.sentiment_very_satisfied, color: iconColor(4)),
           ),
         ),
         Expanded(
           child: IconButton(
-            onPressed: () => controller.changeMood(3),
+            onPressed: () => _changeMood(3),
             style: buttonStyle(3),
             icon: Icon(Icons.sentiment_satisfied, color: iconColor(3)),
           ),
         ),
         Expanded(
           child: IconButton(
-            onPressed: () => controller.changeMood(2),
+            onPressed: () => _changeMood(2),
             style: buttonStyle(2),
             icon: Icon(Icons.sentiment_neutral, color: iconColor(2)),
           ),
         ),
         Expanded(
           child: IconButton(
-            onPressed: () => controller.changeMood(1),
+            onPressed: () => _changeMood(1),
             style: buttonStyle(1),
             icon: Icon(Icons.sentiment_dissatisfied, color: iconColor(1)),
           ),
         ),
         Expanded(
           child: IconButton(
-            onPressed: () => controller.changeMood(0),
+            onPressed: () => _changeMood(0),
             style: buttonStyle(0),
             icon: Icon(Icons.sentiment_very_dissatisfied, color: iconColor(0)),
           ),

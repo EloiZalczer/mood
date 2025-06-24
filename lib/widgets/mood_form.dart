@@ -2,34 +2,48 @@ import 'package:flutter/material.dart';
 import 'package:mood/widgets/mood_picker.dart';
 
 class MoodForm extends StatefulWidget {
-  const MoodForm({super.key});
+  final MoodController moodController;
+  final TextEditingController noteController;
+  final GlobalKey<FormState>? formKey;
+  final bool allowEditing;
+
+  const MoodForm({
+    super.key,
+    required this.moodController,
+    required this.noteController,
+    this.formKey,
+    required this.allowEditing,
+  });
 
   @override
   State<MoodForm> createState() => _MoodFormState();
 }
 
 class _MoodFormState extends State<MoodForm> {
-  late MoodController _moodController;
-  final _noteController = TextEditingController();
-
   @override
   Widget build(BuildContext context) {
     return Form(
-      key: widget.key,
+      key: widget.formKey,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           FormField(
-            builder: (state) => MoodPicker(controller: _moodController),
+            enabled: widget.allowEditing,
+            builder:
+                (state) => MoodPicker(
+                  controller: widget.moodController,
+                  readonly: !widget.allowEditing,
+                ),
             validator: (value) {
-              if (_moodController.mood == null) {
+              if (widget.moodController.mood == null) {
                 return ("Please select a mood");
               }
               return null;
             },
           ),
           TextFormField(
-            controller: _noteController,
+            enabled: widget.allowEditing,
+            controller: widget.noteController,
             keyboardType: TextInputType.text,
             decoration: const InputDecoration(
               border: UnderlineInputBorder(),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mood/database.dart';
-import 'package:mood/models.dart';
+import 'package:mood/database/moods.dart';
+import 'package:mood/models/settings.dart';
+import 'package:mood/widgets/mood_form.dart';
+import 'package:mood/models/moods.dart';
 import 'package:mood/utils.dart';
 import 'package:mood/widgets/mood_picker.dart';
 import 'package:provider/provider.dart';
@@ -46,45 +48,33 @@ class _ShowEntryDialogState extends State<ShowEntryDialog> {
           comment: _noteController.text,
         ),
       );
-      Navigator.pop(context);
+      if (context.mounted) Navigator.pop(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final _allowEditing =
+        Provider.of<SettingsModel>(context, listen: false).allowEditing;
+
     return AlertDialog(
       title: Text(datetimeToDate(widget.entry.date)),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            FormField(
-              builder: (state) => MoodPicker(controller: _moodController),
-              validator: (value) {
-                if (_moodController.mood == null) {
-                  return ("Please select a mood");
-                }
-                return null;
-              },
-            ),
-            TextFormField(
-              controller: _noteController,
-              keyboardType: TextInputType.text,
-              decoration: const InputDecoration(
-                border: UnderlineInputBorder(),
-                labelText: "Note",
-              ),
-            ),
-          ],
-        ),
+      content: MoodForm(
+        moodController: _moodController,
+        noteController: _noteController,
+        formKey: _formKey,
+        allowEditing: _allowEditing,
       ),
       actions: [
         TextButton(
-          child: Text("Cancel"),
+          child: Text("Close"),
           onPressed: () => Navigator.pop(context),
         ),
-        ElevatedButton(child: Text("Save"), onPressed: () => _submit(context)),
+        if (_allowEditing)
+          ElevatedButton(
+            child: Text("Save"),
+            onPressed: () => _submit(context),
+          ),
       ],
     );
   }

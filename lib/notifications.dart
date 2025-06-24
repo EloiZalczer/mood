@@ -1,27 +1,12 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-@pragma('vm:entry-point')
-void notificationTapBackground(NotificationResponse notificationResponse) {
-  // ignore: avoid_print
-  print(
-    'notification(${notificationResponse.id}) action tapped: '
-    '${notificationResponse.actionId} with'
-    ' payload: ${notificationResponse.payload}',
-  );
-  if (notificationResponse.input?.isNotEmpty ?? false) {
-    // ignore: avoid_print
-    print(
-      'notification action tapped with input: ${notificationResponse.input}',
-    );
-  }
-}
-
 class NotificationsProvider {
   final StreamController<NotificationResponse> _notificationResponses =
-      StreamController<NotificationResponse>.broadcast();
+      StreamController<NotificationResponse>();
 
   Stream<NotificationResponse> get notificationResponses =>
       _notificationResponses.stream;
@@ -39,7 +24,7 @@ class NotificationService {
 
   NotificationsProvider get provider => _provider;
 
-  bool _notificationsEnabled = false;
+  late NotificationAppLaunchDetails? appLaunchDetails;
 
   factory NotificationService() {
     return _instance;
@@ -59,7 +44,6 @@ class NotificationService {
     await _notificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: _provider.addNotificationResponse,
-      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
 
     await _requestPermissions();
@@ -67,8 +51,10 @@ class NotificationService {
     final NotificationAppLaunchDetails? notificationAppLaunchDetails =
         await _notificationsPlugin.getNotificationAppLaunchDetails();
 
+    appLaunchDetails = notificationAppLaunchDetails;
+
     if (notificationAppLaunchDetails != null &&
-        notificationAppLaunchDetails.didNotificationLaunchApp == true) {
+        notificationAppLaunchDetails.didNotificationLaunchApp) {
       final response = notificationAppLaunchDetails.notificationResponse;
 
       if (response != null) _provider.addNotificationResponse(response);
@@ -82,14 +68,15 @@ class NotificationService {
               AndroidFlutterLocalNotificationsPlugin
             >();
 
-    final bool? grantedNotificationPermission =
-        await androidImplementation?.requestNotificationsPermission();
-
-    androidImplementation?.requestExactAlarmsPermission();
-    _notificationsEnabled = grantedNotificationPermission ?? false;
+    await androidImplementation?.requestNotificationsPermission();
+    await androidImplementation?.requestExactAlarmsPermission();
   }
 
-  Future<void> scheduleNotifications() async {
+  Future<void> cancelNotifications() async {
+    await _notificationsPlugin.cancelAll();
+  }
+
+  Future<void> scheduleNotifications(TimeOfDay time) async {
     // FIXME probably shouldn't cancel and re-schedule notifications every time
     await _notificationsPlugin.cancelAll();
 
@@ -100,7 +87,8 @@ class NotificationService {
       now.year,
       now.month,
       now.day,
-      23,
+      time.hour,
+      time.minute,
     );
 
     if (scheduledDate.isBefore(now)) {

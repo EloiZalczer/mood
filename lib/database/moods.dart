@@ -42,7 +42,7 @@ class MoodDailyEntry {
   }
 }
 
-Future<Database> initDB() async {
+Future<Database> initMoodDB() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final database = openDatabase(

@@ -66,3 +66,15 @@ List<YearMonth> monthsSince(int year, int month) {
 String datetimeToDate(DateTime d) {
   return DateFormat("MMMM dd, yyyy").format(d);
 }
+
+String formatTimeOfDay(TimeOfDay d) {
+  return "${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}";
+}
+
+TimeOfDay stringToTimeOfDay(String s) {
+  final components = s.split(":");
+  return TimeOfDay(
+    hour: int.parse(components[0]),
+    minute: int.parse(components[1]),
+  );
+}
