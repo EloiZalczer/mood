@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class YearMonth {
+class YearMonth implements Comparable<YearMonth> {
   final int year;
   final int month;
 
@@ -17,6 +17,12 @@ class YearMonth {
   @override
   String toString() {
     return "YearMonth($year-$month)";
+  }
+
+  @override
+  int compareTo(YearMonth other) {
+    if (year != other.year) return year.compareTo(other.year);
+    return month.compareTo(other.month);
   }
 }
 

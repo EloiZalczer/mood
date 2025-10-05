@@ -30,16 +30,15 @@ class _MoodCalendarState extends State<MoodCalendar> {
     );
 
     notificationsProvider.notificationResponses.listen((
-      NotificationResponse response,
+      MoodNotificationResponse response,
     ) {
-      final today = DateTime.now();
       final entry = Provider.of<MoodModel>(
         context,
         listen: false,
-      ).getEntry(today);
+      ).getEntry(response.effectiveDate);
 
       if (entry == null) {
-        if (mounted) onEmptyDayTapped(context, today);
+        if (mounted) onEmptyDayTapped(context, response.effectiveDate);
       } else {
         if (mounted) onEntryDayTapped(context, entry);
       }
@@ -57,9 +56,8 @@ class _MoodCalendarState extends State<MoodCalendar> {
   @override
   Widget build(BuildContext context) {
     final moodsByMonth = context.watch<MoodModel>().entriesByMonth;
-    final sortedEntries = moodsByMonth.entries.sortedBy(
-      (e) => "${e.key.year}${e.key.month}",
-    );
+
+    final sortedEntries = moodsByMonth.entries.sortedBy((e) => e.key);
 
     List<YearMonth> months;
 
@@ -124,8 +122,6 @@ class _MoodCalendarState extends State<MoodCalendar> {
                       for (var entry in monthlyEntries) entry.date.day: entry,
                     };
                   }
-
-                  print(entriesByDays);
 
                   return MoodMonthColumn(
                     squareSize: squareHeight,
@@ -217,6 +213,16 @@ class _MoodMonthColumnState extends State<MoodMonthColumn> {
                   color: moodToColor(entry.mood),
                   border: border,
                 ),
+                child:
+                    entry.comment == null || entry.comment!.isEmpty
+                        ? null
+                        : Center(
+                          child: Container(
+                            width: 4,
+                            height: 4,
+                            color: Colors.black,
+                          ),
+                        ),
               ),
             );
           } else {

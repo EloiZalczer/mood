@@ -1,19 +1,50 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:mood/utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationsProvider {
-  final StreamController<NotificationResponse> _notificationResponses =
-      StreamController<NotificationResponse>();
+  final StreamController<MoodNotificationResponse> _notificationResponses =
+      StreamController<MoodNotificationResponse>();
 
-  Stream<NotificationResponse> get notificationResponses =>
+  Stream<MoodNotificationResponse> get notificationResponses =>
       _notificationResponses.stream;
 
-  void addNotificationResponse(NotificationResponse response) {
-    print("add notification response");
-    _notificationResponses.add(response);
+  void addNotificationResponse(NotificationResponse response) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final notificationTime = prefs.getString("notifications_time");
+
+    if (notificationTime == null) {
+      _notificationResponses.add(
+        MoodNotificationResponse(
+          effectiveDate: DateTime.now(),
+          response: response,
+        ),
+      );
+    } else {
+      final notifTime = stringToTimeOfDay(notificationTime);
+      final now = TimeOfDay.fromDateTime(DateTime.now());
+
+      if (now.isBefore(notifTime)) {
+        _notificationResponses.add(
+          MoodNotificationResponse(
+            effectiveDate: DateTime.now().subtract(const Duration(days: 1)),
+            response: response,
+          ),
+        );
+      } else {
+        _notificationResponses.add(
+          MoodNotificationResponse(
+            effectiveDate: DateTime.now(),
+            response: response,
+          ),
+        );
+      }
+    }
   }
 }
 
@@ -124,4 +155,14 @@ class NotificationService {
       ),
     );
   }
+}
+
+class MoodNotificationResponse {
+  final DateTime effectiveDate;
+  final NotificationResponse response;
+
+  MoodNotificationResponse({
+    required this.effectiveDate,
+    required this.response,
+  });
 }
