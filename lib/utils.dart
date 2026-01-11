@@ -47,17 +47,24 @@ List<YearMonth> monthsSince(int year, int month) {
 
   final List<YearMonth> monthsSince = [];
 
-  for (var y = year; y < currentYear; y++) {
-    monthsSince.addAll([
-      for (var m = 1; m <= 12; m++) YearMonth(year: y, month: m),
-    ]);
+  // Add months from the starting year
+  for (var m = month; m <= 12; m++) {
+    monthsSince.add(YearMonth(year: year, month: m));
   }
 
-  for (var m = month; m <= currentMonth; m++) {
+  year += 1;
+
+  // Add years inbetween
+  while (year < currentYear) {
     monthsSince.addAll([
-      for (var m = 1; m <= currentMonth; m++)
-        YearMonth(year: currentYear, month: m),
+      for (var m = 1; m <= 12; m++) YearMonth(year: year, month: m),
     ]);
+    year += 1;
+  }
+
+  // Add months in current year
+  for (var m = 1; m <= currentMonth; m++) {
+    monthsSince.add(YearMonth(year: currentYear, month: m));
   }
 
   return monthsSince;
